@@ -1,3 +1,17 @@
+defmodule App do
+  def decodificador(codigo) do
+    %{
+    linha_digitavel: "teste",
+    codigo_banco: Enum.slice(codigo, 0..2),
+    moeda: Enum.at(codigo, 3),
+    data_vencimento: FatorVencimento.fatorVencimentoDecode(codigo),
+    valor: Enum.slice(codigo, 37..46),
+    tipo_convenio: Enum.slice(codigo, 19..22),
+  }
+  end
+
+end
+
 defmodule CodigoDeBarras do
   defp mult(x) when x > 7, do: rem(x, 8) + 2
   defp mult(x), do: x + 2
@@ -40,6 +54,7 @@ defmodule CodigoDeBarras do
     |> Enum.map(&String.to_integer(&1))
     |> inserirCodigoBarrasDV()
   end
+
 end
 
 defmodule FatorVencimento do
@@ -53,6 +68,17 @@ defmodule FatorVencimento do
 
   defp contarDias(num) when num > 9999, do: rem(num, 10000) + 1000
   defp contarDias(num), do: num
+
+  def fatorVencimentoDecode(lista) do
+    Enum.slice(lista, 5..8)
+    |> Enum.join("")
+    |> String.to_integer()
+    |> then(fn x -> Date.add(~D[1970-01-01], x) end)
+    |> Timex.format("{0D}/{0M}/{YYYY}")
+
+
+
+  end
 end
 
 defmodule LinhaDigitavel do
@@ -71,12 +97,6 @@ defmodule LinhaDigitavel do
     end)
     |> Enum.reduce(0, fn x, acc -> x + acc end)
     |> modESubtracao()
-  end
-
-  def insereDvLinhaDigitavel(lista) do
-    lista
-    |> Enum.slice(0..8)
-    |> Codigodebarra.dvBlocoLinhaDigitavel(1)
   end
 
   def ordenaParaLinhaDigitavel(lista) do
