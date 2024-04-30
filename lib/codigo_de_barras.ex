@@ -33,11 +33,12 @@ defmodule CodigoDeBarras do
 
   def codigoBarrasGen() do
     x = FileReader.read_file("input.txt")
-    x.banco <> x.moeda <> FatorVencimento.fatorVencimento(x.data) <> formatarValor(x.valor) <> x.conteudo
-    |> String.graphemes
+
+    (x.banco <>
+       x.moeda <> FatorVencimento.fatorVencimento(x.data) <> formatarValor(x.valor) <> x.conteudo)
+    |> String.graphemes()
     |> Enum.map(&String.to_integer(&1))
     |> inserirCodigoBarrasDV()
-
   end
 end
 
@@ -55,35 +56,51 @@ defmodule FatorVencimento do
 end
 
 defmodule LinhaDigitavel do
+  defp multiplicadorBlocoLinhaDigitavel(1, indice) when rem(indice, 2) == 1, do: 1
+  defp multiplicadorBlocoLinhaDigitavel(1, indice) when rem(indice, 2) == 0, do: 2
+  defp multiplicadorBlocoLinhaDigitavel(_, indice) when rem(indice, 2) == 0, do: 1
+  defp multiplicadorBlocoLinhaDigitavel(_, indice) when rem(indice, 2) == 1, do: 2
+  defp reduzirAUmAlgarismo(18), do: 9
+  defp reduzirAUmAlgarismo(numero) when numero <= 9, do: numero
+  defp reduzirAUmAlgarismo(numero), do: rem(numero, 9)
+  defp modESubtracao(soma), do: 10 - rem(soma, 10)
 
-	defp multiplicadorBlocoLinhaDigitavel(1,indice) when rem(indice,2) == 1, do: 1
-	defp multiplicadorBlocoLinhaDigitavel(1,indice) when rem(indice,2) == 0, do: 2
-	defp multiplicadorBlocoLinhaDigitavel(_,indice) when rem(indice,2) == 0, do: 1
-	defp multiplicadorBlocoLinhaDigitavel(_,indice) when rem(indice,2) == 1, do: 2
-	defp reduzirAUmAlgarismo(18), do: 9
-	defp reduzirAUmAlgarismo(numero) when numero <=9, do: numero
-	defp reduzirAUmAlgarismo(numero), do: rem(numero,9)
-	defp modESubtracao(soma), do: 10 - rem(soma,10)
+  def dvBlocoLinhaDigitavel(bloco, l) do
+    Enum.with_index(l, fn elemento, indice ->
+      reduzirAUmAlgarismo(elemento * multiplicadorBlocoLinhaDigitavel(bloco, indice))
+    end)
+    |> Enum.reduce(0, fn x, acc -> x + acc end)
+    |> modESubtracao()
+  end
 
-	def dvBlocoLinhaDigitavel(bloco,l) do
-		Enum.with_index(l, fn elemento, indice -> reduzirAUmAlgarismo(elemento*multiplicadorBlocoLinhaDigitavel(bloco,indice));
-		 end
-		)
-		|>Enum.reduce(0, fn x, acc -> x+acc end)
-		|>modESubtracao()
-	end
+  def insereDvLinhaDigitavel(lista) do
+    lista
+    |> Enum.slice(0..8)
+    |> Codigodebarra.dvBlocoLinhaDigitavel(1)
+  end
 
+  def ordenaParaLinhaDigitavel(lista) do
+    lista
+    |> Enum.slice(0..3)
+    |> Kernel.++(Enum.slice(lista, 19..23))
+    |> Kernel.++(Enum.slice(lista, 24..33))
+    |> Kernel.++(Enum.slice(lista, 34..43))
+    |> Kernel.++(Enum.slice(lista, 4..4))
+    |> Kernel.++(Enum.slice(lista, 5..8))
+    |> Kernel.++(Enum.slice(lista, 9..18))
+  end
 end
 
 defmodule FileReader do
-	def read_file(file_path) do
-		case File.read(file_path) do
-			{:ok, content} ->
-				[banco, moeda, data, valor, conteudo] = String.split(content, "\n")
-				%{banco: banco, moeda: moeda, data: data, valor: valor, conteudo: conteudo}
-			{:error, _reason} ->
-				IO.puts "Erro ao ler o arquivo"
-				%{}
-		end
-	end
+  def read_file(file_path) do
+    case File.read(file_path) do
+      {:ok, content} ->
+        [banco, moeda, data, valor, conteudo] = String.split(content, "\n")
+        %{banco: banco, moeda: moeda, data: data, valor: valor, conteudo: conteudo}
+
+      {:error, _reason} ->
+        IO.puts("Erro ao ler o arquivo")
+        %{}
+    end
+  end
 end
