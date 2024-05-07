@@ -1,8 +1,9 @@
 {application,codigo_de_barras,
              [{optional_applications,[]},
-              {applications,[kernel,stdlib,elixir,logger,timex]},
+              {applications,[kernel,stdlib,elixir,logger,timex,barlix]},
               {description,"codigo_de_barras"},
-              {modules,['Elixir.CodigoDeBarras','Elixir.FatorVencimento',
-                        'Elixir.FileReader','Elixir.LinhaDigitavel']},
+              {modules,['Elixir.App','Elixir.CodigoDeBarras',
+                        'Elixir.EntradaSaida','Elixir.FatorVencimento',
+                        'Elixir.LinhaDigitavel']},
               {registered,[]},
               {vsn,"0.1.0"}]}.

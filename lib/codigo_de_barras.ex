@@ -1,39 +1,16 @@
-defmodule App do
-  def decodificador(codigo) do
-    %{
-    linha_digitavel: "teste",
-    codigo_banco: Enum.slice(codigo, 0..2),
-    moeda: Enum.at(codigo, 3),
-    data_vencimento: FatorVencimento.fatorVencimentoDecode(codigo),
-    valor: Enum.slice(codigo, 37..46),
-    tipo_convenio: Enum.slice(codigo, 19..22),
-  }
-  end
-
-end
-
 defmodule CodigoDeBarras do
   defp mult(x) when x > 7, do: rem(x, 8) + 2
   defp mult(x), do: x + 2
 
-  defp sub11(x) do
-    if 11 - x == 0 or 11 - x == 10 or 11 - x == 11 do
-      0
-    else
-      11 - x
-    end
-  end
+  defp ajustarDv(x) when x >= 10, do: 1
+  defp ajustarDv(x), do: x
 
-  def calc(lista) do
+  # Talvez seja melhor colocar a cal diretamente dentro de dvCodigoBarras para otimizar
+  defp calc(lista) do
     Enum.with_index(lista, fn x, i -> x * mult(i) end)
     |> Enum.sum()
-    |> rem(11)
-    |> sub11()
-  end
-
-  def formatarValor(valor) do
-    String.replace(valor, ",", "")
-    |> String.pad_leading(10, "0")
+    |> (&(11 - rem(&1, 11))).()
+    |> ajustarDv()
   end
 
   def dvCodigoBarras(lista) do
@@ -41,86 +18,88 @@ defmodule CodigoDeBarras do
     |> calc()
   end
 
-  def inserirCodigoBarrasDV(lista) do
-    List.insert_at(lista, 4, dvCodigoBarras(lista))
+  defp formatarValor(valor) do
+    String.replace(valor, ",", "")
+    |> String.pad_leading(10, "0")
   end
 
-  def codigoBarrasGen() do
-    x = FileReader.read_file("input.txt")
-
-    (x.banco <>
-       x.moeda <> FatorVencimento.fatorVencimento(x.data) <> formatarValor(x.valor) <> x.conteudo)
+  def gerar(registro) do
+    (registro.banco <>
+       registro.moeda <>
+       FatorVencimento.fatorVencimento(registro.dataVencimento) <>
+       formatarValor(registro.valor) <> registro.convenio)
     |> String.graphemes()
     |> Enum.map(&String.to_integer(&1))
-    |> inserirCodigoBarrasDV()
+    |> then(fn lista -> List.insert_at(lista, 4, dvCodigoBarras(lista)) end)
   end
 
+  def toString(codigo), do: Enum.join(codigo, "")
+
+  def gerarLinhaDigitavel(codigo) do
+    String.graphemes(codigo)
+    |> Enum.map(&String.to_integer(&1))
+    |> LinhaDigitavel.gerar()
+  end
+
+  defp ajustarMoeda(valor) do
+    cond do
+      String.length(valor) == 3 -> "0" <> valor
+      String.length(valor) == 2 -> String.replace(valor, ",", "0,0")
+      true -> valor
+    end
+  end
+
+  def stringParaMoeda(valor) do
+    String.to_integer(valor)
+    |> Integer.to_string()
+    |> String.split_at(-2)
+    |> then(fn {inicio, fim} -> inicio <> "," <> fim end)
+    |> ajustarMoeda()
+  end
+
+  def decodificar(codigo) do
+    %{
+      boleto: %{
+        banco: String.slice(codigo, 0..2),
+        moeda: String.slice(codigo, 3..3),
+        dataVencimento: String.slice(codigo, 5..8) |> FatorVencimento.decode(),
+        valor: String.slice(codigo, 9..18) |> stringParaMoeda(),
+        convenio: String.slice(codigo, 19..43)
+      },
+      linhaDigitavel: gerarLinhaDigitavel(codigo),
+      codigoDeBarras: codigo
+    }
+  end
 end
 
 defmodule FatorVencimento do
+  defp contarDias(num) when num > 8999, do: rem(num, 9000) |> contarDias
+  defp contarDias(num), do: num + 1000
+
+  defp ajustarDataFutura(data) do
+    if Date.compare(data, Date.utc_today()) == :lt do
+      Date.add(data, 9000)
+      |> ajustarDataFutura()
+    else
+      data
+    end
+  end
+
   def fatorVencimento(data) do
     String.replace(data, "/", "-")
     |> Timex.parse!("{0D}-{0M}-{YYYY}")
-    |> Date.diff(~D[1997-10-07])
+    |> Date.diff(~D[2000-07-03])
     |> contarDias()
     |> Integer.to_string()
   end
 
-  defp contarDias(num) when num > 9999, do: rem(num, 10000) + 1000
-  defp contarDias(num), do: num
+  def decode(fator) do
+    {_, data} =
+      String.to_integer(fator)
+      |> then(fn x -> Date.add(~D[2000-07-03], x - 1000) end)
+      |> ajustarDataFutura()
+      |> Timex.format("{0D}/{0M}/{YYYY}")
 
-  def fatorVencimentoDecode(lista) do
-    Enum.slice(lista, 5..8)
-    |> Enum.join("")
-    |> String.to_integer()
-    |> then(fn x -> Date.add(~D[1970-01-01], x) end)
-    |> Timex.format("{0D}/{0M}/{YYYY}")
-
-
-
-  end
-end
-
-defmodule LinhaDigitavel do
-  defp multiplicadorBlocoLinhaDigitavel(1, indice) when rem(indice, 2) == 1, do: 1
-  defp multiplicadorBlocoLinhaDigitavel(1, indice) when rem(indice, 2) == 0, do: 2
-  defp multiplicadorBlocoLinhaDigitavel(_, indice) when rem(indice, 2) == 0, do: 1
-  defp multiplicadorBlocoLinhaDigitavel(_, indice) when rem(indice, 2) == 1, do: 2
-  defp reduzirAUmAlgarismo(18), do: 9
-  defp reduzirAUmAlgarismo(numero) when numero <= 9, do: numero
-  defp reduzirAUmAlgarismo(numero), do: rem(numero, 9)
-  defp modESubtracao(soma), do: 10 - rem(soma, 10)
-
-  def dvBlocoLinhaDigitavel(bloco, l) do
-    Enum.with_index(l, fn elemento, indice ->
-      reduzirAUmAlgarismo(elemento * multiplicadorBlocoLinhaDigitavel(bloco, indice))
-    end)
-    |> Enum.reduce(0, fn x, acc -> x + acc end)
-    |> modESubtracao()
-  end
-
-  def ordenaParaLinhaDigitavel(lista) do
-    lista
-    |> Enum.slice(0..3)
-    |> Kernel.++(Enum.slice(lista, 19..23))
-    |> Kernel.++(Enum.slice(lista, 24..33))
-    |> Kernel.++(Enum.slice(lista, 34..43))
-    |> Kernel.++(Enum.slice(lista, 4..4))
-    |> Kernel.++(Enum.slice(lista, 5..8))
-    |> Kernel.++(Enum.slice(lista, 9..18))
-  end
-end
-
-defmodule FileReader do
-  def read_file(file_path) do
-    case File.read(file_path) do
-      {:ok, content} ->
-        [banco, moeda, data, valor, conteudo] = String.split(content, "\n")
-        %{banco: banco, moeda: moeda, data: data, valor: valor, conteudo: conteudo}
-
-      {:error, _reason} ->
-        IO.puts("Erro ao ler o arquivo")
-        %{}
-    end
+    data
   end
 end

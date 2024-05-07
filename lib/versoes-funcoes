@@ -1,0 +1,109 @@
+=========================================================================================
+========== primeira versão
+defp multiplicadorBlocoLinhaDigitavel(1, indice) when rem(indice, 2) == 1, do: 1
+defp multiplicadorBlocoLinhaDigitavel(1, indice) when rem(indice, 2) == 0, do: 2
+defp multiplicadorBlocoLinhaDigitavel(_, indice) when rem(indice, 2) == 0, do: 1
+defp multiplicadorBlocoLinhaDigitavel(_, indice) when rem(indice, 2) == 1, do: 2
+defp reduzirAUmAlgarismo(18), do: 9
+defp reduzirAUmAlgarismo(numero) when numero <= 9, do: numero
+defp reduzirAUmAlgarismo(numero), do: rem(numero, 9)
+defp modESubtracao(soma), do: 10 - rem(soma, 10)
+
+def dvBloco(l, bloco) do
+	Enum.with_index(l, fn elemento, indice ->
+		reduzirAUmAlgarismo(elemento * multiplicadorBlocoLinhaDigitavel(bloco, indice))
+	end)
+	|> Enum.reduce(0, fn x, acc -> x + acc end)
+	|> modESubtracao()
+end
+
+=========================================================================================
+========== primeira versão
+def ordenar(codigodebarras) do
+	codigodebarras
+	|> Enum.slice(0..3)
+	|> Kernel.++(Enum.slice(codigodebarras, 19..23))
+	|> Kernel.++(Enum.slice(codigodebarras, 24..33))
+	|> Kernel.++(Enum.slice(codigodebarras, 34..43))
+	|> Kernel.++(Enum.slice(codigodebarras, 4..4))
+	|> Kernel.++(Enum.slice(codigodebarras, 5..8))
+	|> Kernel.++(Enum.slice(codigodebarras, 9..18))
+end
+
+========== segunda versão com prepend
+defp prepend(append,codigodebarras, intervaloInicial, intervaloFinal) do
+	Enum.slice(codigodebarras, intervaloInicial..intervaloFinal) ++ append
+end
+
+
+def ordenar(codigodebarras) do
+	codigodebarras
+	|> Enum.slice(9..18)
+	|> prepend(codigodebarras,5,8)
+	|> prepend(codigodebarras,4,4)
+	|> prepend(codigodebarras,34,43)
+	|> prepend(codigodebarras,24,33)
+	|> prepend(codigodebarras,19,23)
+	|> prepend(codigodebarras,0,3)
+end
+
+=========================================================================================
+========== primeira versão
+defp inserirDv(dv, lista, posicao) do
+	List.insert_at(lista, posicao, dv)
+end
+
+def inserirDvs(lista) do
+	lista1 = lista
+	|> Enum.slice(0..8)
+	|> LinhaDigitavel.dvBloco()
+	|> inserirDv(lista,9)
+
+	lista2 = lista1
+	|> Enum.slice(10..19)
+	|> LinhaDigitavel.dvBloco()
+	|> inserirDv(lista1,20)
+
+	lista2
+	|> Enum.slice(21..30)
+	|> LinhaDigitavel.dvBloco()
+	|> inserirDv(lista2,31)
+
+end
+
+========== segunda versão
+defp inserirDvBloco(lista, intervaloInicial, intervaloFinal) do
+	lista
+	|> Enum.slice(intervaloInicial..intervaloFinal)
+	|> LinhaDigitavel.dvBloco()
+	|> then(fn dv ->  List.insert_at(lista, intervaloFinal+1, dv) end)
+end
+
+def inserirDvs(lista) do
+	lista
+	|> inserirDvBloco(0,8)
+	|> inserirDvBloco(10,19)
+	|> inserirDvBloco(21,30)
+end
+=========================================================================================
+
+
+
+def decodificador(codigo) do
+	%{
+	linhaDigitavel: "teste",
+	codigo_banco: Enum.slice(codigo, 0..2),
+	moeda: Enum.at(codigo, 3),
+	data_vencimento: FatorVencimento.fatorVencimentoDecode(codigo),
+	valor: Enum.slice(codigo, 37..46),
+	tipo_convenio: Enum.slice(codigo, 19..22),
+	}
+end
+
+
+def decodificador(arquivo_input) do
+	EntradaSaida.lerCodigos(arquivo_input)
+	|> Enum.map(fn codigo -> CodigoDeBarras.decodificar(codigo) |> 
+			(&List.insert_at(novaLista, 20, &1)).() end)
+end
+

@@ -1,0 +1,42 @@
+Codificação ITF
+
+Após a leitura das especificações, foram determinados blocos de funcionalidades que poderiam ser implementadas, sendo pensado inicialmente nas funcionalidades:
+Dada uma lista de inteiros que representa um bloco da linha digitável (um bloco, nesse caso, sendo entendido como uma das três partes iniciais da linha digitável, com cada bloco separado por um espaço em branco), calcular o dígito verificador do bloco. A escolha por receber uma lista de inteiros deu-se porque é preciso efetuar operações aritméticas em cada elemento (ou dígito) do bloco, assim, caberia à outras partes do programa prover a entrada em um formato já pronto para a realização das operações
+Dada uma lista de inteiros que representa o código de barras (sem o dígito verificador), calcular o dígito verificador.
+Essas funcionalidades iniciais foram definidas por não dependerem de outras funcionalidades do programa.
+A implementação dos cálculos dos dígitos verificadores foi distribuída entre os integrantes da equipe.
+Como resultado, tem-se a função dvBloco no módulo LinhaDigitavel e a função dvCodigoBarras no módulo CodigoDeBarras.
+Além disso, os respectivos testes das funções foram implementados.
+
+A seguir foi pensada na funcionalidade de gerar o fator de vencimento a partir de uma data, que novamente não depende de outras funcionalidades do programa.
+Recebendo uma data como uma string no formato dia/mês/ano (dia e mês com dois dígitos e ano com 4) ou dia-mês-ano foi utilizada a biblioteca Timex para converter a string para o tipo Date e poder operar com o dado (subtraindo datas e somandos dias a uma data). A função conta a diferença de dias entre a data informada e a data base definida em 03/07/2000, indo até no máximo 9999, após o que reseta para 1000, que representa a diferença de 0 dias em relação à data base, ou no caso, para cada novo ciclo, a data base do próximo ciclo sendo 22/02/2025, com diferença de 10000 dias para a data base anterior.
+Essa funcionalidade foi desenvolvida de forma conjunta pela equipe, sendo implementada na função fatorVencimento do módulo FatorVencimento e seus respectivos testes.
+
+As próximas funcionalidades foram a de ordenar para a linha digitável, recebendo como parâmetro uma lista de inteiros que representa o código de barras. A escolha pela lista de inteiros deu-se pelo fato de que tanto funcionalidades anteriores quanto posteriores a esta precisarem efetuar operações aritméticas sobre cada dígito do código de barras, de forma que esse formato foi considerado adequado para as soluções pensadas. A função implementada gera uma nova lista reorganizando os elementos da lista de inteiros para deixá-los na ordem adequada da linha digitável, implementada na função ordenar do módulo LinhaDigitavel. Foi utilizada uma estratégia de "construir" a linha digitável de trás para frente, de forma a executar a concatenação de novos blocos de dígitos sempre no início da lista já construída até o momento, para otimizar o desempenho (para não ser necessário percorrer a cada concatenação todos os elementos de uma lista crescente para apensar os novos elementos ao final). Também foi feita a função que realiza a leitura de um arquivo de texto contendo os dados de input para a geração de um código de barras e converte os dados para um map que será usado eventualmente para gerar o código de barras.
+Inicialmente essa funcionalidade considerava apenas um boleto, sendo posteriormente adaptada para receber mais de um.
+A função considerada que o arquivo contém somente os dados necessários, sendo 5 por boleto, na seguinte ordem: código do banco, moeda, data de vencimento( no formato dia/mês/ano ou dia-mês-ano), valor do boleto (com duas casas decimais, separadas por vírgula, conteúdo do convênio), cada dado separado por uma quebra de linha.
+É possível inserir dados de vários boletos, mantendo esse formato, iniciando na linha imediatamente posterior à última linha do boleto anterior, exemplo:
+001
+9
+21/08/2032
+1,00
+0500940144816060680935031
+002
+8
+22/08/2032
+2,00
+0500940144816060680935031
+Assim, a função gera uma lista com maps gerados para cada boleto. A função onde foi implemetada é a ler do módulo EstradaSaida (io.ex)
+
+Em paralelo, foi implementada uma função que inicia e coordena o processo de geração de um código de barras, concatenando na ordem correta os dígitos que representam os dados do código de barras, sendo necessário, para isso, conversão da data de vencimento para o fator de vencimento e formatação do valor do boleto para o formato adequado para o código de barras (sem vírgula e com zeros à esquerda até complementar 10 dígitos). Essa função também converte a string para a lista de inteiros (para ser passada para as funções mencionadas anteriormente que precisar operar sobre cada dígito). Chama a função para calcular o dígito verificador e o insere na posição dequada. Essa função recebe um parametro no mesmo formato do map gerado para cada boleto pela função que faz a leitura do arquivo de input. Função resultante: gerar do módulo CodigoDeBarras.
+
+Para completar as funcionalidades relacionadas à linha digitável foram criadas as funções para chamar a função de calcular o dígito verificador para cada bloco e inserindo o dígito calculado na posição correta, a que converte a lista final resultado em uma string, adicionando a formatação adequada (pontos e espaços em branco nas posições necessárias) e a que dá início ao processo de geração da linha digitável, que recebe uma lista de inteiros que representa o código de barras e chama as funções para ordenar a lista, inserir os dígitos verificadores e, por fim, converter a linha digitável para string.
+
+Para iniciar o processo de codificação como um todo foi implementado o método codificador do módulo app que é responsável por iniciar a codificação como um todo (tanto código de barras quanto linha digitável), chamando a função para leitura do arquivo de input, passando os dados para a função de geração do código de barras, geração da linha digitável e saída do resultado da codificação.
+
+Para o processo de decodificação também foi criado nesse módulo uma função que inicia o processo, chamando uma nova função para ler os dados do arquivo de input e passando esse dados para o decodificador do codigo de barras.
+
+A leitura para decodificação é feita por um novo método do módulo EntradaSaida, isso porque o formato esperado da entrada é diferente. Para a decodificação espera-se uma sequência de digitos que representa um código de barras. Mais de um código de barras pode ser inserido no arquivo de input, cada um separado do anterior por uma quebra de linha. O conteúdo é retornado como uma lista de strings.
+
+O decodificador do módulo CodigoDeBarras recebe uma string representando o código de barras e extrai dela os dados do boleto, para isso é necessário uma nova função no módulo FatorVencimento, para decodificar o fator de vencimento do código de barras, convertendo-o para uma data. Aqui cabe apontar que optou-se por converter
+Também é necessária uma função para formatar o valor como moeda (com vírgula separando as casas decimais, sendo duas casas decimais). O decodificador também precisa converter a string para uma lista de inteiros para poder gerar a linha digitável, retornando tudo como um map.
