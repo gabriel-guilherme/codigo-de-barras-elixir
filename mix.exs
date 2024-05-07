@@ -5,7 +5,7 @@ defmodule CodigoDeBarras.MixProject do
     [
       app: :codigo_de_barras,
       version: "0.1.0",
-      elixir: "~> 1.15.7",
+      elixir: "~> 1.14.5",
       start_permanent: Mix.env() == :prod,
       deps: deps()
     ]

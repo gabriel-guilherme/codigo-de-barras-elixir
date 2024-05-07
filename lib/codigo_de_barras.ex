@@ -5,17 +5,12 @@ defmodule CodigoDeBarras do
   defp ajustarDv(x) when x >= 10, do: 1
   defp ajustarDv(x), do: x
 
-  # Talvez seja melhor colocar a cal diretamente dentro de dvCodigoBarras para otimizar
-  defp calc(lista) do
-    Enum.with_index(lista, fn x, i -> x * mult(i) end)
+  def dvCodigoBarras(lista) do
+    Enum.reverse(lista)
+    |> Enum.with_index(fn x, i -> x * mult(i) end)
     |> Enum.sum()
     |> (&(11 - rem(&1, 11))).()
     |> ajustarDv()
-  end
-
-  def dvCodigoBarras(lista) do
-    Enum.reverse(lista)
-    |> calc()
   end
 
   defp formatarValor(valor) do

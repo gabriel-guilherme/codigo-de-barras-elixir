@@ -1,12 +1,14 @@
 defmodule App do
   defp salvarCodificacao(codigo, registro) do
-    map = %{
+    codigoFormatado = CodigoDeBarras.toString(codigo)
+
+    Barlix.ITF.encode!(codigoFormatado) |> Barlix.PNG.print(file: "imagens/barcode_#{codigoFormatado}.png")
+
+    %{
       boleto: registro,
-      codigoDeBarras: CodigoDeBarras.toString(codigo),
+      codigoDeBarras: codigoFormatado,
       linhaDigitavel: LinhaDigitavel.gerar(codigo)
     }
-
-    Barlix.Code39.encode!(map.codigoDeBarras) |> Barlix.PNG.print(file: "barcode.png")
   end
 
   def codificador(arquivo_input) do
