@@ -32,8 +32,8 @@ defmodule FatorVencimentoTest do
         assert FatorVencimento.decode("1000") == "22/02/2025"
         assert FatorVencimento.decode("1001") == "23/02/2025"
         assert FatorVencimento.decode("9701") == "19/12/2048"
-        assert FatorVencimento.decode("9704") == "02/05/2024"
-        assert FatorVencimento.decode("9709") == "07/05/2024"
+        assert FatorVencimento.decode("9704") == "22/12/2048"
+        assert FatorVencimento.decode("9709") == "27/12/2048"
         assert FatorVencimento.decode("3737") == "21/08/2032"
       end)
 
