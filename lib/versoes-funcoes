@@ -103,7 +103,6 @@ end
 
 def decodificador(arquivo_input) do
 	EntradaSaida.lerCodigos(arquivo_input)
-	|> Enum.map(fn codigo -> CodigoDeBarras.decodificar(codigo) |> 
+	|> Enum.map(fn codigo -> CodigoDeBarras.decodificar(codigo) |>
 			(&List.insert_at(novaLista, 20, &1)).() end)
 end
-

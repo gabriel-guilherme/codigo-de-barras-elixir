@@ -2,7 +2,8 @@ defmodule App do
   defp salvarCodificacao(codigo, registro) do
     codigoFormatado = CodigoDeBarras.toString(codigo)
 
-    Barlix.ITF.encode!(codigoFormatado) |> Barlix.PNG.print(file: "imagens/barcode_#{codigoFormatado}.png")
+    Barlix.ITF.encode!(codigoFormatado)
+    |> Barlix.PNG.print(file: "imagens/barcode_#{codigoFormatado}.png")
 
     %{
       boleto: registro,
